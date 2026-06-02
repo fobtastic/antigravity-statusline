@@ -1,0 +1,90 @@
+{
+  "version": 3,
+  "lines": [
+    [
+      {
+        "id": "1",
+        "type": "model",
+        "color": "cyan"
+      },
+      {
+        "id": "a607584d-af74-4a59-b224-daae0b883178",
+        "type": "thinking-effort",
+        "color": "cyan"
+      },
+      {
+        "id": "d0318e38-cac5-42f3-9366-1ee280eaf532",
+        "type": "current-working-dir",
+        "backgroundColor": "bgBrightBlue",
+        "metadata": {
+          "segments": "1"
+        }
+      },
+      {
+        "id": "5",
+        "type": "git-branch",
+        "color": "magenta"
+      },
+      {
+        "id": "7",
+        "type": "git-changes",
+        "color": "brightYellow"
+      }
+    ],
+    [
+      {
+        "id": "39dad9d0-1e42-49e3-b082-f8bf845bdb4e",
+        "type": "context-length",
+        "color": "brightGreen"
+      },
+      {
+        "id": "05a00a6a-a71b-4c3e-ab30-3670087a52a6",
+        "type": "tokens-total",
+        "color": "red"
+      },
+      {
+        "id": "5280b0e0-9119-4c0f-9d8d-458cedd700ca",
+        "type": "tokens-cached",
+        "color": "yellow"
+      },
+      {
+        "id": "fb00afd0-8cfe-428e-b5fa-f5fb64d2d260",
+        "type": "reset-timer",
+        "backgroundColor": "bgBrightWhite"
+      },
+      {
+        "id": "59883368-3dd0-4b2b-9432-6314a37343a2",
+        "type": "weekly-usage",
+        "backgroundColor": "bgBrightRed"
+      },
+      {
+        "id": "a7856fa7-0473-4716-8e9a-57699f1e88e9",
+        "type": "weekly-reset-timer",
+        "backgroundColor": "bgBrightMagenta"
+      }
+    ],
+    []
+  ],
+  "flexMode": "full",
+  "compactThreshold": 60,
+  "colorLevel": 3,
+  "inheritSeparatorColors": false,
+  "globalBold": false,
+  "gitCacheTtlSeconds": 5,
+  "minimalistMode": false,
+  "powerline": {
+    "enabled": true,
+    "separators": [
+      ""
+    ],
+    "separatorInvertBackground": [
+      false
+    ],
+    "startCaps": [],
+    "endCaps": [],
+    "autoAlign": true,
+    "continueThemeAcrossLines": false,
+    "theme": "tokyonight"
+  },
+  "defaultPadding": " "
+}
