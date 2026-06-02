@@ -142,50 +142,8 @@ try {
     // Silent fail if git command errors or timeout
   }
 
-  // Read actual agy prompt history from history.jsonl
-  let usageStr = "";
-  try {
-    const historyFile = path.join(home, '.gemini', 'antigravity-cli', 'history.jsonl');
-    if (fs.existsSync(historyFile)) {
-      const content = fs.readFileSync(historyFile, 'utf8');
-      const lines = content.trim().split('\n');
-      
-      const now = Date.now();
-      const fiveHoursAgo = now - 5 * 60 * 60 * 1000;
-      const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
-      
-      let count5h = 0;
-      let count7d = 0;
-      
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        try {
-          const entry = JSON.parse(line);
-          if (entry && entry.timestamp) {
-            const ts = entry.timestamp;
-            if (ts >= fiveHoursAgo) count5h++;
-            if (ts >= sevenDaysAgo) count7d++;
-          }
-        } catch (e) {}
-      }
-
-      const quotaColor = (count) => {
-        if (count > 40) return "\x1b[1;31m";
-        if (count > 25) return "\x1b[1;33m";
-        return "\x1b[1;32m";
-      };
-
-      const sessionColored = `${quotaColor(count5h)}${count5h}${RESET}`;
-      const weeklyColored = `${quotaColor(count7d)}${count7d}${RESET}`;
-
-      usageStr = ` ${GRAY}|${RESET} 📊 5h: ${sessionColored} | 7d: ${weeklyColored}`;
-    }
-  } catch (e) {
-    // Silent fail
-  }
-
   // Print first line to stdout
-  console.log(`${BLUE}🤖 ${model}${RESET}${statusStr} ${GRAY}|${RESET} 📂 ${cwdShort}${gitStr} ${GRAY}|${RESET} Context: [${BLUE}${bar}${GRAY}${barEmpty}${RESET}] ${usedPercent}% (${formatTokens(usedTokens)}/${formatTokens(totalTokens)}${outStr} t)${cacheStr}${usageStr}`);
+  console.log(`${BLUE}🤖 ${model}${RESET}${statusStr} ${GRAY}|${RESET} 📂 ${cwdShort}${gitStr} ${GRAY}|${RESET} Context: [${BLUE}${bar}${GRAY}${barEmpty}${RESET}] ${usedPercent}% (${formatTokens(usedTokens)}/${formatTokens(totalTokens)}${outStr} t)${cacheStr}`);
 } catch (e) {
   process.exit(0);
 }
