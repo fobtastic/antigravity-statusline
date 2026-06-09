@@ -15,6 +15,76 @@ try {
   } catch (e) {}
 
   const model = data.model?.display_name || "Antigravity";
+  const agentKey = "agy";
+
+  // Update CMUX sidebar status dynamically
+  try {
+    let value = "Ready";
+    let icon = "checkmark.circle.fill";
+    let color = "#34C759";
+
+    if (data.tool_confirmation_pending) {
+      value = "Pending Approval";
+      icon = "exclamationmark.triangle.fill";
+      color = "#FFB300";
+    } else if (data.agent_state === "thinking") {
+      value = "Thinking";
+      icon = "brain.head.profile";
+      color = "#4C8DFF";
+    } else if (data.agent_state === "tool_use" || data.agent_state === "working") {
+      value = "Working";
+      icon = "gearshape.fill";
+      color = "#4C8DFF";
+    } else if (data.agent_state === "responding") {
+      value = "Responding";
+      icon = "bubble.left.and.bubble.right.fill";
+      color = "#00E5FF";
+    } else {
+      value = "Idle";
+      icon = "pause.circle.fill";
+      color = "#8E8E93";
+    }
+
+    let cmuxCli = process.env.CMUX_BUNDLED_CLI_PATH || "";
+    if (!cmuxCli || !fs.existsSync(cmuxCli)) {
+      if (fs.existsSync("/Applications/cmux.app/Contents/Resources/bin/cmux")) {
+        cmuxCli = "/Applications/cmux.app/Contents/Resources/bin/cmux";
+      } else {
+        try {
+          cmuxCli = execSync("which cmux 2>/dev/null", { encoding: "utf8" }).trim();
+        } catch (e) {}
+      }
+    }
+    if (cmuxCli) {
+      let socketPath = process.env.CMUX_SOCKET_PATH || "";
+      if (!socketPath && home) {
+        socketPath = path.join(home, ".local/state/cmux/cmux.sock");
+      }
+      const args = [];
+      if (socketPath && fs.existsSync(socketPath)) {
+        args.push("--socket", socketPath);
+      }
+      args.push("set-status", agentKey, value);
+      const workspaceId = process.env.CMUX_WORKSPACE_ID || "";
+      if (workspaceId) {
+        args.push("--workspace", workspaceId);
+      }
+      const windowId = process.env.CMUX_WINDOW_ID || "";
+      if (windowId) {
+        args.push("--window", windowId);
+      }
+      args.push("--icon", icon, "--color", color);
+      const logFd = fs.openSync('/tmp/cmux_spawn.log', 'w');
+      const child = spawn(cmuxCli, args, {
+        detached: true,
+        stdio: ['ignore', logFd, logFd]
+      });
+      child.unref();
+    }
+  } catch (e) {
+    fs.writeFileSync('/tmp/statusline_err.log', e.stack || e.message);
+  }
+
   const cwd = data.cwd || process.cwd();
 
   // Shorten CWD to home-relative path
@@ -126,7 +196,58 @@ try {
           let prStr = "";
           if (pr) {
             if (pr.state === "OPEN") {
-              prStr = ` \x1b[90m(\x1b[0m\x1b[1;32mPR #${pr.number}\x1b[0m\x1b[90m)\x1b[0m`;
+              // Determine CI Status
+              let ciStatus = 'NONE'; // 'SUCCESS', 'PENDING', 'FAILURE', 'NONE'
+              const rollup = pr.statusCheckRollup || [];
+              if (rollup.length > 0) {
+                let hasFailure = false;
+                let hasPending = false;
+                let hasSuccess = false;
+                for (const check of rollup) {
+                  const state = check.state || check.conclusion;
+                  const status = check.status;
+                  
+                  if (state === 'FAILURE' || state === 'ERROR' || state === 'CANCELLED' || state === 'TIMED_OUT') {
+                    hasFailure = true;
+                  } else if (state === 'PENDING' || status === 'IN_PROGRESS' || status === 'QUEUED' || !state) {
+                    hasPending = true;
+                  } else if (state === 'SUCCESS') {
+                    hasSuccess = true;
+                  }
+                }
+                if (hasFailure) {
+                  ciStatus = 'FAILURE';
+                } else if (hasPending) {
+                  ciStatus = 'PENDING';
+                } else if (hasSuccess) {
+                  ciStatus = 'SUCCESS';
+                }
+              }
+
+              const isMergeable = pr.mergeable === "MERGEABLE";
+              const hasConflicts = pr.mergeable === "CONFLICTING";
+
+              let prColor = "\x1b[1;32m"; // default to Green
+              let prSuffix = "";
+
+              if (ciStatus === 'FAILURE' || hasConflicts) {
+                prColor = "\x1b[1;31m"; // Red for blockages
+                if (hasConflicts) {
+                  prSuffix = " ⚡Conflict";
+                } else {
+                  prSuffix = " ❌";
+                }
+              } else if (ciStatus === 'PENDING') {
+                prColor = "\x1b[1;33m"; // Yellow for progress
+                prSuffix = " ⏳";
+              } else if (ciStatus === 'SUCCESS' && isMergeable) {
+                prColor = "\x1b[1;32m"; // Green for ready to merge
+                prSuffix = " ✅";
+              } else {
+                prColor = "\x1b[1;32m";
+              }
+
+              prStr = ` \x1b[90m(\x1b[0m${prColor}PR #${pr.number}${prSuffix}\x1b[0m\x1b[90m)\x1b[0m`;
             } else if (pr.state === "MERGED") {
               prStr = ` \x1b[90m(\x1b[0m\x1b[1;35mPR #${pr.number} 🟣\x1b[0m\x1b[90m)\x1b[0m`;
             } else if (pr.state === "CLOSED") {
@@ -142,8 +263,8 @@ try {
     // Silent fail if git command errors or timeout
   }
 
-  // Print first line to stdout
-  console.log(`${BLUE}🤖 ${model}${RESET}${statusStr} ${GRAY}|${RESET} 📂 ${cwdShort}${gitStr} ${GRAY}|${RESET} Context: [${BLUE}${bar}${GRAY}${barEmpty}${RESET}] ${usedPercent}% (${formatTokens(usedTokens)}/${formatTokens(totalTokens)}${outStr} t)${cacheStr}`);
+  // Print to stdout (two lines)
+  console.log(`${BLUE}🤖 ${model}${RESET}${statusStr} ${GRAY}|${RESET} 📂 ${cwdShort}${gitStr}\n${GRAY}└─▶${RESET} Context: [${BLUE}${bar}${GRAY}${barEmpty}${RESET}] ${usedPercent}% (${formatTokens(usedTokens)}/${formatTokens(totalTokens)}${outStr} t)${cacheStr}`);
 } catch (e) {
   process.exit(0);
 }

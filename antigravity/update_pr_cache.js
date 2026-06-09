@@ -16,7 +16,7 @@ try {
   let prData = null;
   try {
     // Run gh pr view inside the repoDir to fetch PR status for this specific branch
-    const stdout = execSync(`gh pr view "${branchName}" --json number,state,title,url`, {
+    const stdout = execSync(`gh pr view "${branchName}" --json number,state,title,url,mergeable,mergeStateStatus,statusCheckRollup`, {
       cwd: repoDir,
       encoding: 'utf8',
       timeout: 8000
@@ -52,6 +52,9 @@ try {
     state: prData.state || 'NONE',
     title: prData.title || '',
     url: prData.url || '',
+    mergeable: prData.mergeable || 'UNKNOWN',
+    mergeStateStatus: prData.mergeStateStatus || 'UNKNOWN',
+    statusCheckRollup: prData.statusCheckRollup || [],
     updatedAt: Date.now()
   };
 
